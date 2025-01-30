@@ -31,7 +31,7 @@ body{
     flex-direction: column;
     gap: 16px;
     padding: 16px 24px;
-    overflow: scroll;
+    overflow: auto;
     #header{
       height: fit-content;
       display: flex;
@@ -44,7 +44,7 @@ body{
         border-width: 4px;
         animation: rotate 0.3s infinite linear;
       }
-      #title{
+      #titleArea{
         font-size: 14pt;
         line-height: 24px;
         height: fit-content;
@@ -78,11 +78,9 @@ body{
         background: azure;
       }
     }
-    #message{
+    #messageArea{
       flex: 1;
-      resize: none;
-      user-select: none;
-      cursor: auto;
+      white-space: pre-line;
     }
   }
 }
@@ -103,10 +101,10 @@ body{
 <div id="app">
   <div id="header">
     <div id="loading"></div>
-    <div id="title">日程調整</div>
+    <div id="titleArea">日程調整</div>
   </div>
   <table id="mainTable"></table>
-  <textarea id="messageArea" readonly></textarea>
+  <div id="messageArea" readonly></div>
 </div>
 
 <script>
@@ -124,7 +122,7 @@ const database = firebaseApp.database();
 
 
 /** @type { string[] } */
-const symbolMarks = ['　', '〇', '△', '✕'];
+const symbolMarks = ['　'];
 /** @type { { [key: string]: { [key: string]: string } } } */
 let dataTable = {};
 /** @type { string[] } */
@@ -133,6 +131,8 @@ let dates = [];
 let people = [];
 /** @type { string } */
 let message = ' ';
+/** @type { string } */
+let title = '';
 
 // URLパラメータより値を取得
 const urlParams = new URLSearchParams(window.location.search);
@@ -155,8 +155,8 @@ window.onload = () => {
   } catch(e) {
     // ログイン・データベース接続失敗
     console.log(e);
-    title.textContent = 'URLが間違っています。';
-    title.style.color = 'red';
+    titleArea.textContent = 'URLが間違っています。';
+    titleArea.style.color = 'red';
   } finally {
     // ローディングを削除する
     loading.style.display = 'none';
@@ -171,10 +171,13 @@ async function loadDataAndRender(){
   const ref = database.ref(id);
   snapshot = await ref.get();
   dataTable = snapshot.val();
-  ({ dates, message, people } = dataTable);
+  ({ dates, message, people, title } = dataTable);
+  symbolMarks.push(...dataTable.symbolMarks);
   delete dataTable.dates;
   delete dataTable.message;
   delete dataTable.people;
+  delete dataTable.title;
+  delete dataTable.symbolMarks;
   // テーブルの描画
   renderTable();
 }
@@ -229,8 +232,9 @@ function renderTable() {
       saveData(`/${person}/comment`, comment.value);
     }
   });
-  // 下部のメッセージ表示
-  messageArea.value = message;
+  // タイトルとメッセージの表示
+  titleArea.textContent = title;
+  messageArea.textContent = message;
 }
 
 /**
