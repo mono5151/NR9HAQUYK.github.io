@@ -31,7 +31,7 @@ body{
     flex-direction: column;
     gap: 16px;
     padding: 16px 24px;
-    overflow-x: scroll;
+    overflow: scroll;
     #header{
       height: fit-content;
       display: flex;
@@ -146,10 +146,10 @@ const pass = urlParams.get('pass');
 /**
  * 初期化処理
  */
-window.onload = async () => {
+window.onload = () => {
   try{
     // ログイン処理
-    await auth.signInWithEmailAndPassword(user, pass);
+    auth.signInWithEmailAndPassword(user, pass);
     // データ取得＆描画
     loadDataAndRender();
   } catch(e) {
