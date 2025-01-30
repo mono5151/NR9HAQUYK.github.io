@@ -1,0 +1,223 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>日程調整</title>
+<link rel="icon" href="https://saveincalendar.com/favicon.ico">
+<style>
+html, body{
+  width: 100%;
+  height: 100%;
+  margin: 0;
+  padding: 0;
+  font-size: 0;
+}
+body{
+  *{
+    font: 12pt / 21px "游ゴシック", "Yu Gothic", "ヒラギノ角ゴ ProN", "Meiryo", "MS Gothic", sans-serif;
+    padding: 0;
+    margin: 0;
+    box-sizing: border-box;
+    width: 100%;
+    height: 100%;
+    border: 0 solid dimgray;
+    outline: 0;
+    color: black;
+    background: transparent;
+  }
+  #app{
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+    padding: 16px 24px;
+    #title{
+      font-size: 14pt;
+      height: fit-content;
+    }
+    #mainTable{
+      width: fit-content;
+      height: fit-content;
+      border-collapse: collapse;
+      th, td{
+        width: fit-content;
+        height: fit-content;
+        border-width: 1px;
+      }
+      th{
+        padding: 4px 8px;
+        white-space: pre;
+      }
+      td{
+        font-size: 0;
+        select{
+          text-align: center;
+        }
+        input{
+          min-width: 150px;
+          field-sizing: content;
+          padding: 4px 8px;
+        }
+      }
+      tr:nth-child(even){
+        background: azure;
+      }
+    }
+    #message{
+      flex: 1;
+      resize: none;
+      user-select: none;
+      cursor: auto;
+    }
+  }
+}
+</style>
+</head>
+<body>
+<div id="app">
+  <div id="title">日程調整</div>
+  <table id="mainTable"></table>
+  <textarea id="messageArea" readonly></textarea>
+</div>
+
+<script src="https://www.gstatic.com/firebasejs/11.2.0/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/11.2.0/firebase-auth-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/11.2.0/firebase-database-compat.js"></script>
+<script>
+const firebaseApp = firebase.initializeApp({
+  apiKey: "AIzaSyBaFCqdBRzbkkfIj40-ncZx-1FssZLhn0c",
+  authDomain: "itinerary515.firebaseapp.com",
+  projectId: "itinerary515",
+  storageBucket: "itinerary515.firebasestorage.app",
+  messagingSenderId: "658128265200",
+  appId: "1:658128265200:web:3fe79116d823fb9a830735",
+  databaseURL: "https://itinerary515-default-rtdb.firebaseio.com/",
+});
+const auth = firebaseApp.auth();
+const database = firebaseApp.database();
+
+
+/** @type { string[] } */
+const symbolMarks = ['　', '〇', '△', '✕'];
+/** @type { { [key: string]: { [key: string]: string } } } */
+let dataTable = {};
+/** @type { string[] } */
+let dates = [];
+/** @type { string[] } */
+let people = [];
+/** @type { string } */
+let message = ' ';
+
+
+/**
+ * 初期化処理
+ */
+const urlParams = new URLSearchParams(window.location.search);
+/** @type { string } */
+const id = urlParams.get('id');
+/** @type { string } */
+const user = urlParams.get('user');
+/** @type { string } */
+const pass = urlParams.get('pass');
+
+(async () => {
+  try{
+    // ログイン処理
+    await auth.signInWithEmailAndPassword(user, pass);
+    // データ取得＆描画
+    loadDataAndRender();
+  } catch(e) {
+    // ログイン・データベース接続失敗
+    console.log(e);
+    title.textContent = 'URLが間違っています。';
+    title.style.color = 'red';
+  }
+})();
+
+/**
+ * データをロードして、テーブルを描画する
+ */
+async function loadDataAndRender(){
+  // データベースから取得
+  const ref = database.ref(id);
+  snapshot = await ref.get();
+  dataTable = snapshot.val();
+  ({ dates, message, people } = dataTable);
+  delete dataTable.dates;
+  delete dataTable.message;
+  delete dataTable.people;
+  // テーブルの描画
+  renderTable();
+}
+
+/**
+ * データを保存する
+ * @param { string } path
+ * @param { string } value
+ */
+function saveData(path, value){
+  if(!path) return;
+
+  try{
+    database.ref(`${id}${path}`).set(value);
+  } catch(e) {
+    console.log(e);
+  }
+}
+
+/**
+ * テーブルの描写
+ */
+function renderTable() {
+  [...mainTable.children].forEach(el => el.remove());
+
+  // ヘッダーを作成
+  const row = addChild('tr', mainTable);
+  ['', ...dates, 'コンメト'].forEach(date => addChild('th', row, date.replace(/-/, '/')));
+
+  // ボディーを作成
+  people.forEach(person => {
+    const row = addChild('tr', mainTable);
+    // 名前
+    addChild('th', row, person);
+    // 投票部
+    dates.forEach(date => {
+      const cell = addChild('td', row);
+      // セレクトボックスの生成
+      const select = addChild('select', cell);
+      // 選択肢の追加
+      symbolMarks.forEach(mark => addChild('option', select, mark).value = mark);
+      if(dataTable[person] && dataTable[person][date]) select.value = dataTable[person][date];
+      // セレクトボックス変更時のイベント追加
+      select.oninput = () => {
+        console.log('oninput!');
+        saveData(`/${person}/${date}`, select.value);
+      }
+    });
+    // コメント
+    const comment = addChild('input', addChild('td', row));
+    if(dataTable[person] && dataTable[person].comment) comment.value = dataTable[person].comment;
+    comment.onchange = () => {
+      saveData(`/${person}/comment`, comment.value);
+    }
+  });
+  // 下部のメッセージ表示
+  messageArea.value = message;
+}
+
+/**
+ * @param { string } tag
+ * @param { HTMLElement } parent
+ * @param { string } text
+ * @param { string[] } classList
+ * @return HTMLElement
+ */
+function addChild(tag, parent, text){
+  const el = document.createElement(tag);
+  if(parent) parent.append(el);
+  if(text) el.textContent = text;
+  return el;
+};
+</script>
+</body>
+</html>
