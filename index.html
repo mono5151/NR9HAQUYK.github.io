@@ -134,10 +134,7 @@ let people = [];
 /** @type { string } */
 let message = ' ';
 
-
-/**
- * 初期化処理
- */
+// URLパラメータより値を取得
 const urlParams = new URLSearchParams(window.location.search);
 /** @type { string } */
 const id = urlParams.get('id');
@@ -146,7 +143,10 @@ const user = urlParams.get('user');
 /** @type { string } */
 const pass = urlParams.get('pass');
 
-(async () => {
+/**
+ * 初期化処理
+ */
+window.onload = async () => {
   try{
     // ログイン処理
     await auth.signInWithEmailAndPassword(user, pass);
@@ -158,10 +158,10 @@ const pass = urlParams.get('pass');
     title.textContent = 'URLが間違っています。';
     title.style.color = 'red';
   } finally {
-    // ロードマークを削除する
+    // ローディングを削除する
     loading.style.display = 'none';
   }
-})();
+};
 
 /**
  * データをロードして、テーブルを描画する
@@ -202,7 +202,7 @@ function renderTable() {
 
   // ヘッダーを作成
   const row = addChild('tr', mainTable);
-  ['', ...dates, 'コンメト'].forEach(date => addChild('th', row, date.replace(/-/, '/')));
+  ['', ...dates, 'コメント'].forEach(date => addChild('th', row, date.replace(/-/, '/')));
 
   // ボディーを作成
   people.forEach(person => {
@@ -219,7 +219,6 @@ function renderTable() {
       if(dataTable[person] && dataTable[person][date]) select.value = dataTable[person][date];
       // セレクトボックス変更時のイベント追加
       select.oninput = () => {
-        console.log('oninput!');
         saveData(`/${person}/${date}`, select.value);
       }
     });
