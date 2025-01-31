@@ -206,16 +206,13 @@ function renderTable() {
       symbolMarks.forEach(mark => addChild('option', select, mark).value = mark);
       if(Object.hasOwn(voteResults, person) && Object.hasOwn(voteResults[person], date)) select.value = voteResults[person][date];
       // セレクトボックス変更時のイベント追加
-      select.oninput = () => {
-        saveData(`/voteResults/${person}/${date}`, select.value);
-      }
+      select.oninput = () => saveData(`/voteResults/${person}/${date}`, select.value);
     });
-    // コメント
+    // コメント欄の生成
     const comment = addChild('input', addChild('td', row));
     if(Object.hasOwn(voteResults, person) && Object.hasOwn(voteResults[person], 'comment')) comment.value = voteResults[person].comment;
-    comment.onchange = () => {
-      saveData(`/voteResults/${person}/comment`, comment.value);
-    }
+    // コメント変更時のイベント追加
+    comment.onchange = () =>  saveData(`/voteResults/${person}/comment`, comment.value);
   });
   // タイトルとメッセージの表示
   titleArea.textContent = title;
@@ -226,7 +223,6 @@ function renderTable() {
  * @param { string } tag
  * @param { HTMLElement } parent
  * @param { string } text
- * @param { string[] } classList
  * @return HTMLElement
  */
 function addChild(tag, parent, text){
