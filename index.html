@@ -140,10 +140,10 @@ const pass = urlParams.get('pass');
 /**
  * 初期化処理
  */
-window.onload = () => {
+window.onload = async () => {
   try{
     // ログイン処理
-    auth.signInWithEmailAndPassword(user, pass);
+    await auth.signInWithEmailAndPassword(user, pass);
     // データ取得＆描画
     loadDataAndRender();
   } catch(e) {
